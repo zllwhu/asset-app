@@ -1,6 +1,7 @@
 package org.fisco.bcos.asset.client;
 
 import org.fisco.bcos.asset.contract.Office;
+import org.fisco.bcos.asset.contract.Office_test;
 import org.fisco.bcos.sdk.BcosSDK;
 import org.fisco.bcos.sdk.abi.datatypes.generated.tuples.generated.Tuple4;
 import org.fisco.bcos.sdk.client.Client;
@@ -20,8 +21,8 @@ import java.math.BigInteger;
 import java.util.List;
 import java.util.Properties;
 
-public class OfficeClient {
-    static Logger logger = LoggerFactory.getLogger(OfficeClient.class);
+public class OfficeTestClient {
+    static Logger logger = LoggerFactory.getLogger(OfficeTestClient.class);
 
     private BcosSDK bcosSDK;
     private Client client;
@@ -41,11 +42,11 @@ public class OfficeClient {
     public void deployOfficeAndRecordAddr() {
 
         try {
-            Office office = Office.deploy(client, cryptoKeyPair);
+            Office_test office_test = Office_test.deploy(client, cryptoKeyPair);
             System.out.println(
-                    " deploy Office success, contract address is " + office.getContractAddress());
+                    " deploy Office success, contract address is " + office_test.getContractAddress());
 
-            recordOfficeAddr(office.getContractAddress());
+            recordOfficeAddr(office_test.getContractAddress());
         } catch (Exception e) {
             // TODO Auto-generated catch block
             // e.printStackTrace();
@@ -56,7 +57,7 @@ public class OfficeClient {
     public void recordOfficeAddr(String address) throws FileNotFoundException, IOException {
         Properties prop = new Properties();
         prop.setProperty("address", address);
-        final Resource contractResource = new ClassPathResource("contract.properties");
+        final Resource contractResource = new ClassPathResource("contract_office.properties");
         FileOutputStream fileOutputStream = new FileOutputStream(contractResource.getFile());
         prop.store(fileOutputStream, "contract address");
     }
@@ -64,7 +65,7 @@ public class OfficeClient {
     public String loadOfficeAddr() throws Exception {
         // load Office contact address from contract.properties
         Properties prop = new Properties();
-        final Resource contractResource = new ClassPathResource("contract.properties");
+        final Resource contractResource = new ClassPathResource("contract_office.properties");
         prop.load(contractResource.getInputStream());
 
         String contractAddress = prop.getProperty("address");
@@ -78,15 +79,22 @@ public class OfficeClient {
     public void queryOfficeItems(String warehouse) {
         try {
             String contractAddress = loadOfficeAddr();
-            Office office = Office.load(contractAddress, client, cryptoKeyPair);
-            Tuple4<List<BigInteger>, List<String>, List<String>, List<String>> result = office.select(warehouse);
+            Office_test office_test = Office_test.load(contractAddress, client, cryptoKeyPair);
+            List<Office_test.Struct0> result = office_test.select(warehouse);
             System.out.println("office items are as follows:");
-            for (int i = 0; i < result.getValue1().size(); i++) {
+            for (int i = 0; i < result.size(); i++) {
                 System.out.println("office item " + i);
-                System.out.println(result.getValue1().get(i));
-                System.out.println(result.getValue2().get(i));
-                System.out.println(result.getValue3().get(i));
-                System.out.println(result.getValue4().get(i));
+                System.out.println(result.get(i).warehouse);
+                System.out.println(result.get(i).id);
+                System.out.println(result.get(i).item_name);
+                System.out.println(result.get(i).item_quantity);
+                System.out.println(result.get(i).item_price);
+                System.out.println(result.get(i).item_sum_value);
+                System.out.println(result.get(i).receipt_date);
+                System.out.println(result.get(i).receipt_department);
+                System.out.println(result.get(i).receipt_person);
+                System.out.println(result.get(i).approver);
+                System.out.println(result.get(i).addition);
             }
         } catch (Exception e) {
             // TODO Auto-generated catch block
@@ -97,17 +105,24 @@ public class OfficeClient {
         }
     }
 
-    public void recordOfficeItem(String warehouse, BigInteger id, String item_name, String receipt_date, String receipt_person) {
+    public void recordOfficeItem(String warehouse, BigInteger id, String item_name, BigInteger item_quantity,
+                                 BigInteger item_price, BigInteger item_sum_value, String receipt_date,
+                                 String receipt_department, String receipt_person, String approver,
+                                 String addition) {
         try {
             String contractAddress = loadOfficeAddr();
 
-            Office office = Office.load(contractAddress, client, cryptoKeyPair);
-            TransactionReceipt receipt = office.record(warehouse, id, item_name, receipt_date, receipt_person);
-            List<Office.InsertResultEventResponse> response = office.getInsertResultEvents(receipt);
+            Office_test office_test = Office_test.load(contractAddress, client, cryptoKeyPair);
+
+            Office_test.Struct0 item = new Office_test.Struct0(warehouse, id, item_name, item_quantity, item_price
+                    , item_sum_value, receipt_date, receipt_department, receipt_person, approver, addition);
+
+            TransactionReceipt receipt = office_test.record(item);
+            List<Office_test.InsertResultEventResponse> response = office_test.getInsertResultEvents(receipt);
             if (!response.isEmpty()) {
                 if (response.get(0).count.compareTo(new BigInteger("1")) == 0) {
                     System.out.printf(
-                            " record office item success => item: %s\n", item_name);
+                            " record office item success => item: %s\n", item.item_name);
                 } else {
                     System.out.printf(
                             " record office item failed, ret code is %s \n", response.get(0).count.toString());
@@ -128,9 +143,9 @@ public class OfficeClient {
         try {
             String contractAddress = loadOfficeAddr();
 
-            Office office = Office.load(contractAddress, client, cryptoKeyPair);
-            TransactionReceipt receipt = office.remove(warehouse, id);
-            List<Office.RemoveResultEventResponse> response = office.getRemoveResultEvents(receipt);
+            Office_test office_test = Office_test.load(contractAddress, client, cryptoKeyPair);
+            TransactionReceipt receipt = office_test.remove(warehouse, id);
+            List<Office_test.RemoveResultEventResponse> response = office_test.getRemoveResultEvents(receipt);
             if (!response.isEmpty()) {
                 if (response.get(0).count.compareTo(new BigInteger("1")) == 0) {
                     System.out.printf(
@@ -169,7 +184,7 @@ public class OfficeClient {
             Usage();
         }
 
-        OfficeClient client = new OfficeClient();
+        OfficeTestClient client = new OfficeTestClient();
         client.initialize();
 
         switch (args[0]) {
@@ -183,10 +198,11 @@ public class OfficeClient {
                 client.queryOfficeItems(args[1]);
                 break;
             case "record":
-                if (args.length < 6) {
+                if (args.length < 12) {
                     Usage();
                 }
-                client.recordOfficeItem(args[1], new BigInteger(args[2]), args[3], args[4], args[5]);
+                client.recordOfficeItem(args[1], new BigInteger(args[2]), args[3], new BigInteger(args[4]),
+                        new BigInteger(args[5]), new BigInteger(args[6]), args[7], args[8], args[9], args[10], args[11]);
                 break;
             case "remove":
                 if (args.length < 2) {
