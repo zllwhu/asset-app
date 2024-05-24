@@ -1,9 +1,7 @@
 package org.fisco.bcos.asset.client;
 
-import org.fisco.bcos.asset.contract.Office;
 import org.fisco.bcos.asset.contract.Office_test;
 import org.fisco.bcos.sdk.BcosSDK;
-import org.fisco.bcos.sdk.abi.datatypes.generated.tuples.generated.Tuple4;
 import org.fisco.bcos.sdk.client.Client;
 import org.fisco.bcos.sdk.crypto.keypair.CryptoKeyPair;
 import org.fisco.bcos.sdk.model.TransactionReceipt;
